@@ -20,12 +20,19 @@ package au.com.grieve.geyserlogin;
 
 import lombok.Getter;
 import org.geysermc.connector.event.annotations.Event;
+import org.geysermc.connector.event.events.geyser.GeyserAuthenticationEvent;
 import org.geysermc.connector.event.events.geyser.GeyserStartEvent;
+import org.geysermc.connector.event.events.network.SessionConnectEvent;
+import org.geysermc.connector.event.events.network.SessionDisconnectEvent;
 import org.geysermc.connector.event.events.plugin.PluginDisableEvent;
+import org.geysermc.connector.network.session.GeyserSession;
 import org.geysermc.connector.plugin.GeyserPlugin;
 import org.geysermc.connector.plugin.PluginClassLoader;
 import org.geysermc.connector.plugin.PluginManager;
 import org.geysermc.connector.plugin.annotations.Plugin;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Plugin(
         name = "GeyserLogin",
@@ -38,17 +45,27 @@ public class GeyserLoginPlugin extends GeyserPlugin {
     @Getter
     public static GeyserLoginPlugin instance;
 
+    private final Map<GeyserSession, PlayerSession> playerSessions = new HashMap<>();
+
     public GeyserLoginPlugin(PluginManager pluginManager, PluginClassLoader pluginClassLoader) {
         super(pluginManager, pluginClassLoader);
 
         instance = this;
-//        registerEvents(new UpstreamPackets());
     }
 
     @Event
-    public void onGeyserStart(GeyserStartEvent event) {
-        // Register Education command
-//        getConnector().getBootstrap().getGeyserCommandManager().registerCommand(new EducationCommand(getConnector(), "education", "Education Commands", "geyser.command.education", tokenManager));
+    public void onSessionConnect(SessionConnectEvent event) {
+        playerSessions.put(event.getSession(), new PlayerSession(event.getSession()));
+    }
+
+    @Event
+    public void onAuthenticate(GeyserAuthenticationEvent event) {
+
+    }
+
+    @Event
+    public void onSessionDisconnect(SessionDisconnectEvent event) {
+        playerSessions.remove(event.getSession());
     }
 
     @Event
