@@ -24,5 +24,4 @@ import org.geysermc.connector.network.session.GeyserSession;
 @Data
 public class PlayerSession {
     private final GeyserSession session;
-    boolean loggedIn = false;
 }

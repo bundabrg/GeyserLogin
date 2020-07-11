@@ -1,6 +1,6 @@
 /*
- * EduSupport - Minecraft Educational Support for Geyser
- * Copyright (C) 2020 EduSupport Developers
+ * GeyserLogin - Log in as a different username to Geyser
+ * Copyright (C) 2020 GeyserLogin Developers
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,21 +18,28 @@
 
 package au.com.grieve.geyserlogin;
 
+import au.com.grieve.geyserlogin.ui.LoginUI;
+import com.nukkitx.protocol.bedrock.packet.ModalFormResponsePacket;
 import lombok.Getter;
+import org.geysermc.common.window.CustomFormWindow;
+import org.geysermc.common.window.response.CustomFormResponse;
 import org.geysermc.connector.event.annotations.Event;
-import org.geysermc.connector.event.events.geyser.GeyserAuthenticationEvent;
-import org.geysermc.connector.event.events.geyser.GeyserStartEvent;
+import org.geysermc.connector.event.events.geyser.GeyserLoginEvent;
 import org.geysermc.connector.event.events.network.SessionConnectEvent;
 import org.geysermc.connector.event.events.network.SessionDisconnectEvent;
-import org.geysermc.connector.event.events.plugin.PluginDisableEvent;
+import org.geysermc.connector.event.events.packet.UpstreamPacketReceiveEvent;
 import org.geysermc.connector.network.session.GeyserSession;
 import org.geysermc.connector.plugin.GeyserPlugin;
 import org.geysermc.connector.plugin.PluginClassLoader;
 import org.geysermc.connector.plugin.PluginManager;
 import org.geysermc.connector.plugin.annotations.Plugin;
 
+import java.io.File;
+import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @Plugin(
         name = "GeyserLogin",
@@ -42,13 +49,28 @@ import java.util.Map;
 )
 @Getter
 public class GeyserLoginPlugin extends GeyserPlugin {
+    public static final int FORM_ID = 11986700; // Base FORM we are interested in. We reserve 100 addresses
+    public static final int WINDOW_MAIN = 0;
+    public static final int WINDOW_ERROR = 99;
+
     @Getter
     public static GeyserLoginPlugin instance;
 
     private final Map<GeyserSession, PlayerSession> playerSessions = new HashMap<>();
+    private final Db db;
+
 
     public GeyserLoginPlugin(PluginManager pluginManager, PluginClassLoader pluginClassLoader) {
         super(pluginManager, pluginClassLoader);
+
+        Db db;
+        try {
+            db = new Db(new File(getDataFolder(), "data.db"));
+        } catch (SQLException throwables) {
+            getLogger().error("Unable to connect to SQLite Db: db.sqlite");
+            db = null;
+        }
+        this.db = db;
 
         instance = this;
     }
@@ -59,8 +81,15 @@ public class GeyserLoginPlugin extends GeyserPlugin {
     }
 
     @Event
-    public void onAuthenticate(GeyserAuthenticationEvent event) {
+    public void onLogin(GeyserLoginEvent event) {
+        PlayerSession playerSession = playerSessions.get(event.getSession());
 
+        if (playerSession == null) {
+            return;
+        }
+
+        event.setCancelled(true);
+        showLoginWindow(playerSession);
     }
 
     @Event
@@ -68,8 +97,65 @@ public class GeyserLoginPlugin extends GeyserPlugin {
         playerSessions.remove(event.getSession());
     }
 
-    @Event
-    public void onDisable(PluginDisableEvent event) {
-        System.err.println("I'm dead");
+    void showLoginWindow(PlayerSession playerSession) {
+        List<String> logins = db.getRecentLogins(playerSession.getSession().getAuthData().getUUID());
+        if (logins.size() == 0) {
+            logins.add(playerSession.getSession().getAuthData().getName());
+        }
+
+        CustomFormWindow window = LoginUI.mainWindow(logins);
+
+        on(UpstreamPacketReceiveEvent.class, (handler, event) -> {
+            ModalFormResponsePacket packet = (ModalFormResponsePacket) event.getPacket();
+            int formId = packet.getFormId() - FORM_ID;
+            if (formId < 0 || formId > 99) {
+                return;
+            }
+
+            System.err.println(event);
+
+            switch (formId) {
+                case WINDOW_MAIN:
+                    window.setResponse(packet.getFormData());
+                    CustomFormResponse response = (CustomFormResponse) window.getResponse();
+
+                    String login = response.getInputResponses().get(1).equals("") ?
+                            response.getDropdownResponses().get(0).getElementContent() : response.getInputResponses().get(1);
+
+                    // Make sure its valid
+                    if (login.length() < 3) {
+                        playerSession.getSession().sendForm(LoginUI.errorWindow("Username too short"), FORM_ID + WINDOW_ERROR);
+                        return;
+                    }
+
+                    if (login.length() > 16) {
+                        playerSession.getSession().sendForm(LoginUI.errorWindow("Username too long"), FORM_ID + WINDOW_ERROR);
+                        return;
+                    }
+
+                    if (!Pattern.matches("[a-zA-Z0-9_]+", login)) {
+                        playerSession.getSession().sendForm(LoginUI.errorWindow("Invalid username"), FORM_ID + WINDOW_ERROR);
+                        return;
+                    }
+
+                    handler.unregister();
+
+                    // Add to database
+                    db.addLogin(playerSession.getSession().getAuthData().getUUID(), login);
+
+                    // Authenticate
+                    playerSession.getSession().authenticate(login);
+                    break;
+                case WINDOW_ERROR:
+                    playerSession.getSession().sendForm(window, FORM_ID + WINDOW_MAIN);
+                    break;
+            }
+
+        })
+                .filter(ModalFormResponsePacket.class)
+                .build();
+
+        playerSession.getSession().sendForm(window, FORM_ID + WINDOW_MAIN);
     }
+
 }
