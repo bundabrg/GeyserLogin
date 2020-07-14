@@ -42,7 +42,7 @@ public class LoginUI {
             first = false;
         }
 
-        CustomFormBuilder builder = new CustomFormBuilder("Login")
+        CustomFormBuilder builder = new CustomFormBuilder("Login As")
                 .addComponent(dropdown)
                 .addComponent(new InputComponent("Custom", "username", ""));
 
