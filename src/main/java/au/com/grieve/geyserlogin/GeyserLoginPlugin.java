@@ -99,7 +99,9 @@ public class GeyserLoginPlugin extends GeyserPlugin {
 
     void showLoginWindow(PlayerSession playerSession) {
         List<String> logins = db.getRecentLogins(playerSession.getSession().getAuthData().getUUID());
-        if (logins.size() == 0) {
+
+        // Always add the users own login name
+        if (!logins.contains(playerSession.getSession().getAuthData().getName())) {
             logins.add(playerSession.getSession().getAuthData().getName());
         }
 
@@ -111,8 +113,6 @@ public class GeyserLoginPlugin extends GeyserPlugin {
             if (formId < 0 || formId > 99) {
                 return;
             }
-
-            System.err.println(event);
 
             switch (formId) {
                 case WINDOW_MAIN:
