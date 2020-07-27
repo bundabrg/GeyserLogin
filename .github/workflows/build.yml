@@ -66,6 +66,7 @@ jobs:
           path: build/output
 
   documentation:
+    if: startsWith(github.ref,'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -107,7 +108,7 @@ jobs:
   # If a tag is pushed starting with 'v' then we create a new release and attach the binary and documentation
   release:
     if: startsWith(github.ref,'refs/tags/v')
-    needs: [build, documentation]
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -146,7 +147,7 @@ jobs:
           [Online Documentation](https://bundabrg.github.io/GeyserLink)
 
           Since Last Release:
-          $(git log $(git describe --tags --abbrev=0 HEAD^ 2> /dev/null || git rev-list --max-parents=0 HEAD)..HEAD --graph --pretty=format:'%h %d %s [%an]' --abbrev-commit)
+          $(git log $(git describe --tags --abbrev=0 HEAD^ 2> /dev/null || git rev-list --max-parents=0 HEAD)..HEAD --graph --pretty=format:'%h %d %s [%an]' | head -n 300)
           EOF
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
