@@ -19,6 +19,8 @@
 package au.com.grieve.geyserlogin;
 
 import au.com.grieve.geyserlogin.ui.LoginUI;
+import com.nukkitx.protocol.bedrock.data.GameRuleData;
+import com.nukkitx.protocol.bedrock.packet.GameRulesChangedPacket;
 import com.nukkitx.protocol.bedrock.packet.ModalFormResponsePacket;
 import lombok.Getter;
 import org.geysermc.common.window.CustomFormWindow;
@@ -39,6 +41,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 @Plugin(
@@ -98,14 +101,17 @@ public class GeyserLoginPlugin extends GeyserPlugin {
     }
 
     void showLoginWindow(PlayerSession playerSession) {
-        List<String> logins = db.getRecentLogins(playerSession.getSession().getAuthData().getUUID());
+        UUID uuid = playerSession.getSession().getAuthData().getUUID();
+        List<String> logins = db.getRecentLogins(uuid);
 
         // Always add the users own login name
         if (!logins.contains(playerSession.getSession().getAuthData().getName())) {
             logins.add(playerSession.getSession().getAuthData().getName());
         }
 
-        CustomFormWindow window = LoginUI.mainWindow(logins);
+        boolean showPosition = db.getSetting(uuid, "show-position", "true").equals("true");
+
+        CustomFormWindow window = LoginUI.mainWindow(logins, showPosition);
 
         on(UpstreamPacketReceiveEvent.class, (handler, event) -> {
             ModalFormResponsePacket packet = (ModalFormResponsePacket) event.getPacket();
@@ -138,10 +144,18 @@ public class GeyserLoginPlugin extends GeyserPlugin {
                         return;
                     }
 
+                    Boolean isShowPosition = response.getToggleResponses().getOrDefault(2, true);
+
                     handler.unregister();
 
                     // Add to database
-                    db.addLogin(playerSession.getSession().getAuthData().getUUID(), login);
+                    db.addLogin(uuid, login);
+                    db.setSetting(uuid, "show-position", isShowPosition ? "true" : "false");
+
+                    // Update GameRule
+                    GameRulesChangedPacket gameRulesChangedPacket = new GameRulesChangedPacket();
+                    gameRulesChangedPacket.getGameRules().add(new GameRuleData<>("showcoordinates", isShowPosition));
+                    playerSession.getSession().sendUpstreamPacket(gameRulesChangedPacket);
 
                     // Authenticate
                     playerSession.getSession().authenticate(login);

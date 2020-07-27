@@ -58,6 +58,74 @@ public class Db {
                     "  used DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP " +
                     ");"
             );
+
+            // I don't like this sort of settings table but it allows forward compatibility
+            conn.createStatement().execute("CREATE TABLE IF NOT EXISTS settings(" +
+                    "  id INTEGER PRIMARY_KEY, " +
+                    "  user_uuid VARCHAR, " +
+                    "  setting VARCHAR NOT NULL, " +
+                    "  value VARCHAR NOT NULL " +
+                    ");"
+            );
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+    }
+
+    /**
+     * Get a Setting
+     */
+    public String getSetting(UUID uuid, String setting, String def) {
+        try {
+            PreparedStatement stmt = conn.prepareStatement("SELECT value " +
+                    "FROM settings " +
+                    "WHERE user_uuid = ? " +
+                    "AND setting = ? " +
+                    ";"
+            );
+
+
+            stmt.setString(1, uuid.toString());
+            stmt.setString(2, setting);
+
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString(1);
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        return def;
+    }
+
+    public String getSetting(UUID uuid, String setting) {
+        return getSetting(uuid, setting, null);
+    }
+
+    public void setSetting(UUID uuid, String setting, String value) {
+        try {
+            PreparedStatement stmt = conn.prepareStatement("DELETE FROM settings " +
+                    "WHERE user_uuid = ? " +
+                    "AND setting = ? " +
+                    ";"
+            );
+
+
+            stmt.setString(1, uuid.toString());
+            stmt.setString(2, setting);
+
+            stmt.execute();
+
+            stmt = conn.prepareStatement("INSERT INTO settings(user_uuid, setting, value) " +
+                    "VALUES(?, ?, ?) " +
+                    ";"
+            );
+
+            stmt.setString(1, uuid.toString());
+            stmt.setString(2, setting);
+            stmt.setString(3, value);
+
+            stmt.execute();
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }

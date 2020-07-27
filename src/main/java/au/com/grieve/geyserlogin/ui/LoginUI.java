@@ -26,13 +26,14 @@ import org.geysermc.common.window.SimpleFormWindow;
 import org.geysermc.common.window.button.FormButton;
 import org.geysermc.common.window.component.DropdownComponent;
 import org.geysermc.common.window.component.InputComponent;
+import org.geysermc.common.window.component.ToggleComponent;
 
 import java.util.Collections;
 import java.util.List;
 
 @UtilityClass
 public class LoginUI {
-    public CustomFormWindow mainWindow(List<String> logins) {
+    public CustomFormWindow mainWindow(List<String> logins, boolean showPosition) {
         DropdownComponent dropdown = new DropdownComponent();
         dropdown.setText("Recent Logins");
 
@@ -44,7 +45,8 @@ public class LoginUI {
 
         CustomFormBuilder builder = new CustomFormBuilder("Login as")
                 .addComponent(dropdown)
-                .addComponent(new InputComponent("Custom", "username", ""));
+                .addComponent(new InputComponent("Custom", "username", ""))
+                .addComponent(new ToggleComponent("Show Position", showPosition));
 
         return builder.build();
     }
