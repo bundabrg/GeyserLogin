@@ -93,7 +93,6 @@ jobs:
       - run: mkdocs build
 
       - name: Deploy to Github Pages
-        if: github.ref == 'refs/heads/master'
         uses: peaceiris/actions-gh-pages@v3
         with:
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
