@@ -25,11 +25,11 @@ import com.nukkitx.protocol.bedrock.packet.ModalFormResponsePacket;
 import lombok.Getter;
 import org.geysermc.common.window.CustomFormWindow;
 import org.geysermc.common.window.response.CustomFormResponse;
-import org.geysermc.connector.event.annotations.Event;
+import org.geysermc.connector.event.annotations.GeyserEventHandler;
 import org.geysermc.connector.event.events.geyser.GeyserLoginEvent;
 import org.geysermc.connector.event.events.network.SessionConnectEvent;
 import org.geysermc.connector.event.events.network.SessionDisconnectEvent;
-import org.geysermc.connector.event.events.packet.UpstreamPacketReceiveEvent;
+import org.geysermc.connector.event.events.packet.upstream.ModalFormResponsePacketReceive;
 import org.geysermc.connector.network.session.GeyserSession;
 import org.geysermc.connector.plugin.GeyserPlugin;
 import org.geysermc.connector.plugin.PluginClassLoader;
@@ -78,12 +78,12 @@ public class GeyserLoginPlugin extends GeyserPlugin {
         instance = this;
     }
 
-    @Event
+    @GeyserEventHandler
     public void onSessionConnect(SessionConnectEvent event) {
         playerSessions.put(event.getSession(), new PlayerSession(event.getSession()));
     }
 
-    @Event
+    @GeyserEventHandler
     public void onLogin(GeyserLoginEvent event) {
         PlayerSession playerSession = playerSessions.get(event.getSession());
 
@@ -95,7 +95,7 @@ public class GeyserLoginPlugin extends GeyserPlugin {
         showLoginWindow(playerSession);
     }
 
-    @Event
+    @GeyserEventHandler
     public void onSessionDisconnect(SessionDisconnectEvent event) {
         playerSessions.remove(event.getSession());
     }
@@ -113,8 +113,8 @@ public class GeyserLoginPlugin extends GeyserPlugin {
 
         CustomFormWindow window = LoginUI.mainWindow(logins, showPosition);
 
-        on(UpstreamPacketReceiveEvent.class, (handler, event) -> {
-            ModalFormResponsePacket packet = (ModalFormResponsePacket) event.getPacket();
+        on(ModalFormResponsePacketReceive.class, (event, handler) -> {
+            ModalFormResponsePacket packet = event.getPacket();
             int formId = packet.getFormId() - FORM_ID;
             if (formId < 0 || formId > 99) {
                 return;
@@ -122,6 +122,8 @@ public class GeyserLoginPlugin extends GeyserPlugin {
 
             switch (formId) {
                 case WINDOW_MAIN:
+                    event.setCancelled(true);
+
                     window.setResponse(packet.getFormData());
                     CustomFormResponse response = (CustomFormResponse) window.getResponse();
 
@@ -161,13 +163,13 @@ public class GeyserLoginPlugin extends GeyserPlugin {
                     playerSession.getSession().authenticate(login);
                     break;
                 case WINDOW_ERROR:
+                    event.setCancelled(true);
+
                     playerSession.getSession().sendForm(window, FORM_ID + WINDOW_MAIN);
                     break;
             }
 
-        })
-                .filter(ModalFormResponsePacket.class)
-                .build();
+        }).build();
 
         playerSession.getSession().sendForm(window, FORM_ID + WINDOW_MAIN);
     }
