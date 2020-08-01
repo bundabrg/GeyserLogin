@@ -124,6 +124,11 @@ public class GeyserLoginPlugin extends GeyserPlugin {
                 case WINDOW_MAIN:
                     event.setCancelled(true);
 
+                    if (packet.getFormData() == null) {
+                        event.getSession().disconnect("Cancelled as requested");
+                        return;
+                    }
+
                     window.setResponse(packet.getFormData());
                     CustomFormResponse response = (CustomFormResponse) window.getResponse();
 
