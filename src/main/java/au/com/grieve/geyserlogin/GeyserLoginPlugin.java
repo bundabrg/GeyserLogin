@@ -173,7 +173,7 @@ public class GeyserLoginPlugin extends GeyserPlugin {
                     break;
             }
 
-        }).build();
+        });
 
         playerSession.getSession().sendForm(window, FORM_ID + WINDOW_MAIN);
     }
