@@ -30,11 +30,11 @@ import org.geysermc.connector.event.events.geyser.GeyserLoginEvent;
 import org.geysermc.connector.event.events.network.SessionConnectEvent;
 import org.geysermc.connector.event.events.network.SessionDisconnectEvent;
 import org.geysermc.connector.event.events.packet.upstream.ModalFormResponsePacketReceive;
+import org.geysermc.connector.extension.ExtensionClassLoader;
+import org.geysermc.connector.extension.ExtensionManager;
+import org.geysermc.connector.extension.GeyserExtension;
+import org.geysermc.connector.extension.annotations.Extension;
 import org.geysermc.connector.network.session.GeyserSession;
-import org.geysermc.connector.plugin.GeyserPlugin;
-import org.geysermc.connector.plugin.PluginClassLoader;
-import org.geysermc.connector.plugin.PluginManager;
-import org.geysermc.connector.plugin.annotations.Plugin;
 
 import java.io.File;
 import java.sql.SQLException;
@@ -44,27 +44,27 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-@Plugin(
+@Extension(
         name = "GeyserLogin",
         version = "1.1.0-dev",
         authors = {"Bundabrg"},
         description = "Provides login features for Geyser"
 )
 @Getter
-public class GeyserLoginPlugin extends GeyserPlugin {
+public class GeyserLoginExtension extends GeyserExtension {
     public static final int FORM_ID = 11986700; // Base FORM we are interested in. We reserve 100 addresses
     public static final int WINDOW_MAIN = 0;
     public static final int WINDOW_ERROR = 99;
 
     @Getter
-    public static GeyserLoginPlugin instance;
+    public static GeyserLoginExtension instance;
 
     private final Map<GeyserSession, PlayerSession> playerSessions = new HashMap<>();
     private final Db db;
 
 
-    public GeyserLoginPlugin(PluginManager pluginManager, PluginClassLoader pluginClassLoader) {
-        super(pluginManager, pluginClassLoader);
+    public GeyserLoginExtension(ExtensionManager extensionManager, ExtensionClassLoader extensionClassLoader) {
+        super(extensionManager, extensionClassLoader);
 
         Db db;
         try {
