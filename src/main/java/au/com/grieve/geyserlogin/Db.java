@@ -165,8 +165,10 @@ public class Db {
         try {
             PreparedStatement stmt = conn.prepareStatement("SELECT id " +
                     "FROM logins " +
-                    "WHERE username = ?");
+                    "WHERE username = ?" +
+                    "AND user_uuid = ?");
             stmt.setString(1, login);
+            stmt.setString(2, uuid.toString());
 
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
