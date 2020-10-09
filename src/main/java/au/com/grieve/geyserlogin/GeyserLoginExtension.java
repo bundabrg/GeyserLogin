@@ -123,7 +123,7 @@ public class GeyserLoginExtension extends GeyserExtension {
             switch (formId) {
                 case WINDOW_MAIN:
                     event.setCancelled(true);
-                    if (packet.getFormData().strip().equals("null")) {
+                    if (packet.getFormData().replaceAll("^[ \t]+|[ \t]+$", "").equals("null")) {
                         event.getSession().disconnect("Cancelled as requested");
                         return;
                     }
