@@ -15,11 +15,21 @@ server like with AuthMe.
 
 ## Quickstart
 
-* Make sure you're running a build of Geyser that supports extensions. A bleeding edge version that does
-can be found [here](https://github.com/bundabrg/Geyser/releases).
+* Make sure you're running a build of Geyser that supports extensions. A bleeding edge version that does can be
+  found [here](https://github.com/bundabrg/Geyser/releases).
 
-* Download [GeyserLogin](https://github.com/bundabrg/GeyserLogin/releases) and place it into a extensions folder
-under your Geyser folder. Run Geyser and it will now pop up the following log dialogue when a player
-connects:
+* Download [GeyserLogin](https://github.com/bundabrg/GeyserLogin/releases) and place it into a extensions folder under
+  your Geyser folder. Run Geyser and it will now pop up the following log dialogue when a player connects:
 
 ![](img/geyserlogin.png)
+
+## Donations
+
+As this is an open source project it is free to use and free to modify. If you do wish to donate then you may use the
+following link with all funds going into my "Evening Fund".
+
+The Evening Fund is a fund I (bundabrg) have set up for all my open source projects. Anything sent there will be used to
+help others. I appreciate your contribution, and I thank you for giving me the ability to bring some happiness to others
+as well.
+
+* Bitcoin: `bc1q0twm860q6qtr4aaje4xqaft2zumsxdh37k04u5`
