@@ -1,6 +1,6 @@
 /*
  * GeyserLogin - Log in as a different username to Geyser
- * Copyright (C) 2020 GeyserLogin Developers
+ * Copyright (C) 2021 GeyserLogin Developers
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,10 @@ package au.com.grieve.geyserlogin;
 import au.com.grieve.geyserlogin.ui.LoginUI;
 import com.nukkitx.protocol.bedrock.data.GameRuleData;
 import com.nukkitx.protocol.bedrock.packet.GameRulesChangedPacket;
+import com.nukkitx.protocol.bedrock.packet.ModalFormRequestPacket;
 import com.nukkitx.protocol.bedrock.packet.ModalFormResponsePacket;
+import com.nukkitx.protocol.bedrock.packet.NetworkStackLatencyPacket;
 import lombok.Getter;
-import org.geysermc.common.window.CustomFormWindow;
-import org.geysermc.common.window.response.CustomFormResponse;
 import org.geysermc.connector.event.annotations.GeyserEventHandler;
 import org.geysermc.connector.event.events.geyser.GeyserLoginEvent;
 import org.geysermc.connector.event.events.network.SessionConnectEvent;
@@ -35,6 +35,8 @@ import org.geysermc.connector.extension.ExtensionManager;
 import org.geysermc.connector.extension.GeyserExtension;
 import org.geysermc.connector.extension.annotations.Extension;
 import org.geysermc.connector.network.session.GeyserSession;
+import org.geysermc.cumulus.Form;
+import org.geysermc.cumulus.response.CustomFormResponse;
 
 import java.io.File;
 import java.sql.SQLException;
@@ -111,7 +113,7 @@ public class GeyserLoginExtension extends GeyserExtension {
 
         boolean showPosition = db.getSetting(uuid, "show-position", "true").equals("true");
 
-        CustomFormWindow window = LoginUI.mainWindow(logins, showPosition);
+        Form window = LoginUI.mainWindow(logins, showPosition);
 
         on(ModalFormResponsePacketReceive.class, (event, handler) -> {
             ModalFormResponsePacket packet = event.getPacket();
@@ -128,29 +130,33 @@ public class GeyserLoginExtension extends GeyserExtension {
                         return;
                     }
 
-                    window.setResponse(packet.getFormData());
-                    CustomFormResponse response = (CustomFormResponse) window.getResponse();
+                    CustomFormResponse response = (CustomFormResponse) window.parseResponse(packet.getFormData());
 
-                    String login = response.getInputResponses().get(1).equals("") ?
-                            response.getDropdownResponses().get(0).getElementContent() : response.getInputResponses().get(1);
+                    if (!response.isCorrect()) {
+                        event.getSession().disconnect("Invalid Data");
+                        return;
+                    }
+
+                    String login = response.getInput(1).equals("") ?
+                            logins.get(response.getDropdown(0)) : response.getInput(1);
 
                     // Make sure its valid
                     if (login.length() < 3) {
-                        playerSession.getSession().sendForm(LoginUI.errorWindow("Username too short"), FORM_ID + WINDOW_ERROR);
+                        sendForm(playerSession.getSession(), LoginUI.errorWindow("Username too short"), FORM_ID + WINDOW_ERROR);
                         return;
                     }
 
                     if (login.length() > 16) {
-                        playerSession.getSession().sendForm(LoginUI.errorWindow("Username too long"), FORM_ID + WINDOW_ERROR);
+                        sendForm(playerSession.getSession(), LoginUI.errorWindow("Username too long"), FORM_ID + WINDOW_ERROR);
                         return;
                     }
 
                     if (!Pattern.matches("[a-zA-Z0-9_]+", login)) {
-                        playerSession.getSession().sendForm(LoginUI.errorWindow("Invalid username"), FORM_ID + WINDOW_ERROR);
+                        sendForm(playerSession.getSession(), LoginUI.errorWindow("Invalid username"), FORM_ID + WINDOW_ERROR);
                         return;
                     }
 
-                    Boolean isShowPosition = response.getToggleResponses().getOrDefault(2, true);
+                    Boolean isShowPosition = response.getToggle(2);
 
                     handler.unregister();
 
@@ -169,13 +175,26 @@ public class GeyserLoginExtension extends GeyserExtension {
                 case WINDOW_ERROR:
                     event.setCancelled(true);
 
-                    playerSession.getSession().sendForm(window, FORM_ID + WINDOW_MAIN);
+                    sendForm(playerSession.getSession(), window, FORM_ID + WINDOW_MAIN);
                     break;
             }
 
         });
 
-        playerSession.getSession().sendForm(window, FORM_ID + WINDOW_MAIN);
+        sendForm(playerSession.getSession(), window, FORM_ID + WINDOW_MAIN);
+    }
+
+    public void sendForm(GeyserSession session, Form form, int formId) {
+        ModalFormRequestPacket modalFormRequestPacket = new ModalFormRequestPacket();
+        modalFormRequestPacket.setFormId(formId);
+        modalFormRequestPacket.setFormData(form.getJsonData());
+        session.sendUpstreamPacket(modalFormRequestPacket);
+
+        // This packet is used to fix the image loading bug
+        NetworkStackLatencyPacket networkStackLatencyPacket = new NetworkStackLatencyPacket();
+        networkStackLatencyPacket.setFromServer(true);
+        networkStackLatencyPacket.setTimestamp(System.currentTimeMillis());
+        session.sendUpstreamPacket(networkStackLatencyPacket);
     }
 
 }

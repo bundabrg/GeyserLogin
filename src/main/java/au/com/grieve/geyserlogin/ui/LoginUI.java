@@ -1,6 +1,6 @@
 /*
  * GeyserLogin - Log in as a different username to Geyser
- * Copyright (C) 2020 GeyserLogin Developers
+ * Copyright (C) 2021 GeyserLogin Developers
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,40 +19,39 @@
 package au.com.grieve.geyserlogin.ui;
 
 import lombok.experimental.UtilityClass;
-import org.geysermc.common.window.CustomFormBuilder;
-import org.geysermc.common.window.CustomFormWindow;
-import org.geysermc.common.window.FormWindow;
-import org.geysermc.common.window.SimpleFormWindow;
-import org.geysermc.common.window.button.FormButton;
-import org.geysermc.common.window.component.DropdownComponent;
-import org.geysermc.common.window.component.InputComponent;
-import org.geysermc.common.window.component.ToggleComponent;
+import org.geysermc.cumulus.CustomForm;
+import org.geysermc.cumulus.Form;
+import org.geysermc.cumulus.SimpleForm;
+import org.geysermc.cumulus.component.ButtonComponent;
+import org.geysermc.cumulus.component.DropdownComponent;
+import org.geysermc.cumulus.component.InputComponent;
+import org.geysermc.cumulus.component.ToggleComponent;
 
 import java.util.Collections;
 import java.util.List;
 
 @UtilityClass
 public class LoginUI {
-    public CustomFormWindow mainWindow(List<String> logins, boolean showPosition) {
-        DropdownComponent dropdown = new DropdownComponent();
-        dropdown.setText("Recent Logins");
+    public CustomForm mainWindow(List<String> logins, boolean showPosition) {
+        DropdownComponent.Builder dropdownBuilder = DropdownComponent.builder()
+                .text("Recent Logins");
 
         boolean first = true;
         for (String login : logins) {
-            dropdown.addOption(login, first);
+            dropdownBuilder.option(login, first);
             first = false;
         }
 
-        CustomFormBuilder builder = new CustomFormBuilder("Login as")
-                .addComponent(dropdown)
-                .addComponent(new InputComponent("Custom", "username", ""))
-                .addComponent(new ToggleComponent("Show Position", showPosition));
-
-        return builder.build();
+        return CustomForm.builder()
+                .title("Login as")
+                .component(dropdownBuilder.build())
+                .component(InputComponent.of("Custom", "username", ""))
+                .component(ToggleComponent.of("Show Position", showPosition))
+                .build();
     }
 
-    public FormWindow errorWindow(String message) {
-        return new SimpleFormWindow("Error", message, Collections.singletonList(new FormButton("OK")));
+    public Form errorWindow(String message) {
+        return SimpleForm.of("Error", message, Collections.singletonList(ButtonComponent.of("OK")));
     }
 
 }
