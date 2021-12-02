@@ -25,18 +25,19 @@ import com.nukkitx.protocol.bedrock.packet.ModalFormRequestPacket;
 import com.nukkitx.protocol.bedrock.packet.ModalFormResponsePacket;
 import com.nukkitx.protocol.bedrock.packet.NetworkStackLatencyPacket;
 import lombok.Getter;
-import org.geysermc.connector.event.annotations.GeyserEventHandler;
-import org.geysermc.connector.event.events.geyser.GeyserLoginEvent;
-import org.geysermc.connector.event.events.network.SessionConnectEvent;
-import org.geysermc.connector.event.events.network.SessionDisconnectEvent;
-import org.geysermc.connector.event.events.packet.upstream.ModalFormResponsePacketReceive;
-import org.geysermc.connector.extension.ExtensionClassLoader;
-import org.geysermc.connector.extension.ExtensionManager;
-import org.geysermc.connector.extension.GeyserExtension;
-import org.geysermc.connector.extension.annotations.Extension;
-import org.geysermc.connector.network.session.GeyserSession;
 import org.geysermc.cumulus.Form;
 import org.geysermc.cumulus.response.CustomFormResponse;
+import org.geysermc.geyser.event.annotations.GeyserEventHandler;
+import org.geysermc.geyser.event.events.geyser.GeyserLoginEvent;
+import org.geysermc.geyser.event.events.network.SessionConnectEvent;
+import org.geysermc.geyser.event.events.network.SessionDisconnectEvent;
+import org.geysermc.geyser.event.events.packet.upstream.ModalFormResponsePacketReceive;
+import org.geysermc.geyser.event.events.packet.upstream.SetLocalPlayerAsInitializedPacketReceive;
+import org.geysermc.geyser.extension.ExtensionClassLoader;
+import org.geysermc.geyser.extension.ExtensionManager;
+import org.geysermc.geyser.extension.GeyserExtension;
+import org.geysermc.geyser.extension.annotations.Extension;
+import org.geysermc.geyser.session.GeyserSession;
 
 import java.io.File;
 import java.sql.SQLException;
@@ -44,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 @Extension(
@@ -87,13 +89,20 @@ public class GeyserLoginExtension extends GeyserExtension {
 
     @GeyserEventHandler
     public void onLogin(GeyserLoginEvent event) {
+        event.setCancelled(true);
+
+        // Create a connection first and wait till player is initialized
+        event.getSession().connect();
+    }
+
+    @GeyserEventHandler
+    public void onPlayerInitialized(SetLocalPlayerAsInitializedPacketReceive event) {
         PlayerSession playerSession = playerSessions.get(event.getSession());
 
         if (playerSession == null) {
             return;
         }
 
-        event.setCancelled(true);
         showLoginWindow(playerSession);
     }
 
@@ -103,12 +112,12 @@ public class GeyserLoginExtension extends GeyserExtension {
     }
 
     void showLoginWindow(PlayerSession playerSession) {
-        UUID uuid = playerSession.getSession().getAuthData().getUUID();
+        UUID uuid = playerSession.getSession().getAuthData().uuid();
         List<String> logins = db.getRecentLogins(uuid);
 
         // Always add the users own login name
-        if (!logins.contains(playerSession.getSession().getAuthData().getName())) {
-            logins.add(playerSession.getSession().getAuthData().getName());
+        if (!logins.contains(playerSession.getSession().getAuthData().name())) {
+            logins.add(playerSession.getSession().getAuthData().name());
         }
 
         boolean showPosition = db.getSetting(uuid, "show-position", "true").equals("true");
@@ -194,7 +203,8 @@ public class GeyserLoginExtension extends GeyserExtension {
         NetworkStackLatencyPacket networkStackLatencyPacket = new NetworkStackLatencyPacket();
         networkStackLatencyPacket.setFromServer(true);
         networkStackLatencyPacket.setTimestamp(System.currentTimeMillis());
-        session.sendUpstreamPacket(networkStackLatencyPacket);
+        session.scheduleInEventLoop(() -> session.sendUpstreamPacket(networkStackLatencyPacket),
+                500, TimeUnit.MILLISECONDS);
     }
 
 }
