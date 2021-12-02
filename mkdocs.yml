@@ -8,7 +8,7 @@ edit_uri: ""
 copyright: 'Copyright (C) 2020 GeyserLogin Developers'
 
 extra_css:
-  - 'css/mkpdf.css'
+#  - 'css/mkpdf.css'
 #  - 'css/version_select.css'
 
 #extra_javascript:
@@ -61,11 +61,11 @@ plugins:
         - 'theme/*'
   - git-revision-date-localized:
       type: timeago
-  - mkpdfs:
-      author: GeyserLogin Developers
-      toc_title: Table of contents
-      output_path: pdf/documentation.pdf
-      design: docs/css/pdf.css
+#  - mkpdfs:
+#      author: GeyserLogin Developers
+#      toc_title: Table of contents
+#      output_path: pdf/documentation.pdf
+#      design: docs/css/pdf.css
 
 # Discord not yet supported but it will be soon
 #extra:
