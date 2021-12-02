@@ -1,6 +1,6 @@
 /*
  * GeyserLogin - Log in as a different username to Geyser
- * Copyright (C) 2020 GeyserLogin Developers
+ * Copyright (C) 2021 GeyserLogin Developers
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 package au.com.grieve.geyserlogin;
 
 import lombok.Data;
-import org.geysermc.connector.network.session.GeyserSession;
+import org.geysermc.geyser.session.GeyserSession;
 
 @Data
 public class PlayerSession {
