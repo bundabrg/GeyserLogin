@@ -114,13 +114,13 @@ jobs:
       - run: git fetch --prune --unshallow
 
       - name: Download Binary Artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: binary
           path: build/binary
 
       - name: Download Documentation Artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: documentation
           path: build/docs
